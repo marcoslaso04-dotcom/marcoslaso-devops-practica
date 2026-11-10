@@ -23,22 +23,107 @@ Este repositorio se usa en la Práctica 3 para trabajar con Git/GitHub (ramas `f
 │   ├── schemas.py   Esquemas Pydantic de entrada/salida
 │   └── main.py      Endpoints de la API
 ├── cliente/         Cliente Python con requests
-└── frontend/        Frontend web (index.html)
+├── frontend/        Frontend web (index.html)
+├── requirements.txt Dependencias de la API (versiones fijadas)
+├── dockerfile       Imagen Docker de la API
+└── .dockerignore    Ficheros que no entran en la imagen
 ```
 
 Ni el cliente ni el frontend importan nada del servidor: todo pasa por los endpoints de la API.
 
-## 1. Arrancar la API
+## Docker
+
+La API está contenerizada con la imagen base `python:3.12-slim`. El contenedor instala las dependencias de `requirements.txt`, copia el código de `src/` y ejecuta la API con un usuario sin privilegios (`appuser`), no como root. El cliente y el frontend no entran en la imagen: se ejecutan fuera y se conectan a la API por HTTP.
+
+### Construir la imagen
+
+Desde la raíz del repositorio:
 
 ```bash
-cd src
+docker build -t tienda-online-api:1.0 .
+```
+
+### Ejecutar el contenedor
+
+```bash
+# En primer plano (Ctrl+C para pararlo)
+docker run --rm -p 8000:8000 tienda-online-api:1.0
+
+# En segundo plano, con nombre
+docker run -d --rm --name tienda-api -p 8000:8000 tienda-online-api:1.0
+docker logs tienda-api
+docker stop tienda-api
+
+# Cambiando el puerto interno con la variable PORT
+docker run --rm -e PORT=9000 -p 9000:9000 tienda-online-api:1.0
+```
+
+### Variables de entorno
+
+| Variable | Valor por defecto | Descripción |
+| --- | --- | --- |
+| `PORT` | `8000` | Puerto en el que escucha uvicorn dentro del contenedor |
+
+La aplicación no usa claves ni secretos.
+
+### Salida esperada y pruebas
+
+Al arrancar, el contenedor muestra:
+
+```text
+INFO:     Started server process [7]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://0.0.0.0:8000 (Press CTRL+C to quit)
+```
+
+Con el contenedor en marcha:
+
+1. Abrir http://localhost:8000/docs: aparece la documentación de Swagger con los endpoints de usuarios, productos y pedidos.
+2. Probar con `curl`:
+   ```bash
+   curl http://localhost:8000/productos          # [] (todavía no hay productos)
+   curl -X POST http://localhost:8000/productos \
+        -H "Content-Type: application/json" \
+        -d '{"tipo": "generico", "nombre": "Taza", "precio": 5.5, "stock": 30}'
+   ```
+3. Ejecutar el cliente Python contra el contenedor. Todas las peticiones deben devolver `200` o `201`:
+   ```bash
+   pip install -r cliente/requirements.txt
+   python cliente/cliente.py http://localhost:8000
+   ```
+4. Abrir `frontend/index.html` en el navegador: se conecta a `http://localhost:8000`.
+
+### Descargar la imagen publicada (Docker Hub)
+
+```bash
+docker pull <usuario-dockerhub>/tienda-online-api:1.0
+docker run --rm -p 8000:8000 <usuario-dockerhub>/tienda-online-api:1.0
+```
+
+Para publicarla después de construirla:
+
+```bash
+docker login
+docker tag tienda-online-api:1.0 <usuario-dockerhub>/tienda-online-api:1.0
+docker tag tienda-online-api:1.0 <usuario-dockerhub>/tienda-online-api:latest
+docker push <usuario-dockerhub>/tienda-online-api:1.0
+docker push <usuario-dockerhub>/tienda-online-api:latest
+```
+
+## Ejecución sin Docker
+
+### 1. Arrancar la API
+
+```bash
 pip install -r requirements.txt
+cd src
 uvicorn main:app --reload
 ```
 
 La documentación interactiva queda en http://localhost:8000/docs.
 
-## 2. Cliente Python (requests)
+### 2. Cliente Python (requests)
 
 Con la API arrancada, en otra terminal:
 
@@ -56,7 +141,7 @@ La dirección de la API está en la constante `BASE_URL` de `cliente.py`. Tambi�
 python cliente.py http://192.168.1.34:8000
 ```
 
-## 3. Comunicación entre dos equipos
+### 3. Comunicación entre dos equipos
 
 **En el equipo servidor:**
 
@@ -79,7 +164,7 @@ python cliente.py http://192.168.1.34:8000
    ```
 3. En el servidor, `GET /usuarios` o `GET /productos` muestran los datos creados desde el otro equipo, lo que demuestra que los dos trabajan sobre la misma API.
 
-## 4. Frontend web
+### 4. Frontend web
 
 Con la API arrancada, abrir `frontend/index.html` en el navegador (doble clic). Si la API está en otro equipo, se escribe su dirección en la caja **Servidor API** de arriba y se pulsa **Conectar**.
 
@@ -91,7 +176,7 @@ Incluye:
 | Usuarios | Ver los usuarios y crear clientes o administradores |
 | Pedidos | Crear un pedido con varios productos y consultar los pedidos de un usuario |
 
-### Cómo hace las peticiones
+#### Cómo hace las peticiones
 
 Todo el código que habla con la API está en la sección `PETICIONES A LA API` del `<script>` de `index.html`:
 
