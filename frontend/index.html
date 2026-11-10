@@ -1,0 +1,585 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Tienda Online</title>
+<style>
+  :root {
+    --fondo: #f4f5f7;
+    --tarjeta: #ffffff;
+    --texto: #1d2330;
+    --suave: #667085;
+    --borde: #dfe3ea;
+    --primario: #2457c5;
+    --primario-hover: #1c469f;
+    --ok: #157a3b;
+    --ok-fondo: #e6f5ec;
+    --error: #b42318;
+    --error-fondo: #fdecea;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    background: var(--fondo);
+    color: var(--texto);
+    line-height: 1.45;
+  }
+  header {
+    background: var(--tarjeta);
+    border-bottom: 1px solid var(--borde);
+    padding: 14px 16px;
+  }
+  .contenedor { max-width: 1100px; margin: 0 auto; }
+  header .contenedor { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; justify-content: space-between; }
+  h1 { font-size: 1.3rem; margin: 0; }
+  .config { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+  .config input { width: 240px; }
+  .estado { font-size: .85rem; color: var(--suave); }
+  .estado.ok { color: var(--ok); }
+  .estado.error { color: var(--error); }
+
+  nav { display: flex; gap: 4px; padding: 12px 16px 0; max-width: 1100px; margin: 0 auto; flex-wrap: wrap; }
+  nav button {
+    background: none; border: none; border-bottom: 3px solid transparent;
+    padding: 8px 14px; font-size: 1rem; cursor: pointer; color: var(--suave);
+  }
+  nav button.activa { color: var(--primario); border-bottom-color: var(--primario); font-weight: 600; }
+
+  main { padding: 16px; }
+  .seccion { display: none; }
+  .seccion.activa { display: grid; gap: 16px; grid-template-columns: 340px 1fr; align-items: start; }
+  @media (max-width: 800px) { .seccion.activa { grid-template-columns: 1fr; } }
+
+  .tarjeta {
+    background: var(--tarjeta); border: 1px solid var(--borde);
+    border-radius: 10px; padding: 16px; min-width: 0;
+  }
+  .tarjeta h2 { font-size: 1.05rem; margin: 0 0 12px; }
+  .cabecera-tarjeta { display: flex; justify-content: space-between; align-items: center; gap: 8px; margin-bottom: 12px; }
+  .cabecera-tarjeta h2 { margin: 0; }
+
+  label { display: block; font-size: .85rem; color: var(--suave); margin: 10px 0 4px; }
+  input, select {
+    width: 100%; padding: 8px 10px; font-size: .95rem;
+    border: 1px solid var(--borde); border-radius: 6px; background: #fff; color: var(--texto);
+  }
+  button.btn {
+    background: var(--primario); color: #fff; border: none; border-radius: 6px;
+    padding: 9px 14px; font-size: .95rem; cursor: pointer;
+  }
+  button.btn:hover { background: var(--primario-hover); }
+  button.btn.secundario { background: #fff; color: var(--primario); border: 1px solid var(--borde); }
+  button.btn.peligro { background: #fff; color: var(--error); border: 1px solid var(--borde); padding: 4px 10px; font-size: .85rem; }
+  form button.btn[type=submit] { margin-top: 14px; width: 100%; }
+  .oculto { display: none; }
+
+  .tabla-scroll { overflow-x: auto; }
+  table { width: 100%; border-collapse: collapse; font-size: .92rem; }
+  th, td { text-align: left; padding: 8px; border-bottom: 1px solid var(--borde); vertical-align: top; }
+  th { color: var(--suave); font-weight: 600; font-size: .8rem; text-transform: uppercase; letter-spacing: .03em; }
+  td.num, th.num { text-align: right; white-space: nowrap; }
+  .chip { display: inline-block; padding: 1px 8px; border-radius: 999px; font-size: .78rem; background: #eef2fb; color: var(--primario); }
+  .vacio { color: var(--suave); font-style: italic; padding: 12px 0; }
+
+  .linea { display: grid; grid-template-columns: 1fr 80px 32px; gap: 6px; margin-bottom: 6px; }
+  .linea button { border: 1px solid var(--borde); background: #fff; border-radius: 6px; cursor: pointer; color: var(--error); }
+
+  .pedido { border: 1px solid var(--borde); border-radius: 8px; padding: 12px; margin-bottom: 10px; }
+  .pedido-cab { display: flex; justify-content: space-between; flex-wrap: wrap; gap: 6px; margin-bottom: 6px; }
+  .pedido-cab span { color: var(--suave); font-size: .85rem; }
+
+  #avisos { position: fixed; right: 16px; bottom: 16px; display: grid; gap: 8px; max-width: min(380px, calc(100vw - 32px)); z-index: 10; }
+  .aviso { padding: 10px 14px; border-radius: 8px; font-size: .92rem; box-shadow: 0 4px 14px rgba(0,0,0,.12); }
+  .aviso.ok { background: var(--ok-fondo); color: var(--ok); }
+  .aviso.error { background: var(--error-fondo); color: var(--error); }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="contenedor">
+    <h1>Tienda Online</h1>
+    <div class="config">
+      <label for="api-url" style="margin:0">Servidor API</label>
+      <input id="api-url" type="text" value="http://localhost:8000">
+      <button class="btn secundario" id="btn-conectar">Conectar</button>
+      <span class="estado" id="estado">Sin comprobar</span>
+    </div>
+  </div>
+</header>
+
+<nav>
+  <button data-seccion="productos" class="activa">Productos</button>
+  <button data-seccion="usuarios">Usuarios</button>
+  <button data-seccion="pedidos">Pedidos</button>
+</nav>
+
+<main class="contenedor">
+
+  <!-- ===================== PRODUCTOS ===================== -->
+  <section class="seccion activa" id="productos">
+    <div class="tarjeta">
+      <h2>Nuevo producto</h2>
+      <form id="form-producto">
+        <label for="p-tipo">Tipo</label>
+        <select id="p-tipo">
+          <option value="generico">Generico</option>
+          <option value="electronico">Electronico</option>
+          <option value="ropa">Ropa</option>
+        </select>
+        <label for="p-nombre">Nombre</label>
+        <input id="p-nombre" required>
+        <label for="p-precio">Precio (EUR)</label>
+        <input id="p-precio" type="number" step="0.01" min="0.01" required>
+        <label for="p-stock">Stock</label>
+        <input id="p-stock" type="number" step="1" min="0" required>
+        <div id="campos-electronico" class="oculto">
+          <label for="p-garantia">Meses de garantia</label>
+          <input id="p-garantia" type="number" step="1" min="0">
+        </div>
+        <div id="campos-ropa" class="oculto">
+          <label for="p-talla">Talla</label>
+          <input id="p-talla">
+          <label for="p-color">Color</label>
+          <input id="p-color">
+        </div>
+        <button class="btn" type="submit">Crear producto</button>
+      </form>
+    </div>
+    <div class="tarjeta">
+      <div class="cabecera-tarjeta">
+        <h2>Inventario</h2>
+        <button class="btn secundario" id="btn-recargar-productos">Recargar</button>
+      </div>
+      <div class="tabla-scroll" id="tabla-productos"></div>
+    </div>
+  </section>
+
+  <!-- ===================== USUARIOS ===================== -->
+  <section class="seccion" id="usuarios">
+    <div class="tarjeta">
+      <h2>Nuevo usuario</h2>
+      <form id="form-usuario">
+        <label for="u-tipo">Tipo</label>
+        <select id="u-tipo">
+          <option value="cliente">Cliente</option>
+          <option value="admin">Administrador</option>
+        </select>
+        <label for="u-nombre">Nombre</label>
+        <input id="u-nombre" required>
+        <label for="u-email">Email</label>
+        <input id="u-email" type="email" required>
+        <div id="campo-direccion">
+          <label for="u-direccion">Direccion postal</label>
+          <input id="u-direccion">
+        </div>
+        <button class="btn" type="submit">Crear usuario</button>
+      </form>
+    </div>
+    <div class="tarjeta">
+      <div class="cabecera-tarjeta">
+        <h2>Usuarios registrados</h2>
+        <button class="btn secundario" id="btn-recargar-usuarios">Recargar</button>
+      </div>
+      <div class="tabla-scroll" id="tabla-usuarios"></div>
+    </div>
+  </section>
+
+  <!-- ===================== PEDIDOS ===================== -->
+  <section class="seccion" id="pedidos">
+    <div class="tarjeta">
+      <h2>Nuevo pedido</h2>
+      <form id="form-pedido">
+        <label for="ped-cliente">Cliente</label>
+        <select id="ped-cliente" required></select>
+        <label>Productos y cantidades</label>
+        <div id="lineas"></div>
+        <button class="btn secundario" type="button" id="btn-anadir-linea">+ Anadir producto</button>
+        <button class="btn" type="submit">Crear pedido</button>
+      </form>
+    </div>
+    <div class="tarjeta">
+      <div class="cabecera-tarjeta">
+        <h2>Pedidos de un usuario</h2>
+      </div>
+      <label for="consulta-usuario" style="margin-top:0">Usuario</label>
+      <select id="consulta-usuario"></select>
+      <div id="lista-pedidos" style="margin-top:12px"></div>
+    </div>
+  </section>
+</main>
+
+<div id="avisos"></div>
+
+<script>
+// =====================================================================
+// CONFIGURACION: direccion del servidor
+// Se puede cambiar desde la caja "Servidor API" de arriba
+// (p. ej. http://192.168.1.34:8000 para usar la API de otro equipo).
+// =====================================================================
+let API_URL = "http://localhost:8000";
+try {
+  const guardada = localStorage.getItem("tienda_api_url");
+  if (guardada) API_URL = guardada;
+} catch (e) { /* sin localStorage: usamos el valor por defecto */ }
+
+
+// =====================================================================
+// PETICIONES A LA API
+// Toda la comunicacion con FastAPI pasa por la funcion pedirApi(),
+// que usa fetch() para hacer la peticion HTTP, comprueba el codigo
+// de estado y devuelve el JSON de la respuesta.
+// =====================================================================
+
+async function pedirApi(metodo, ruta, cuerpo) {
+  const opciones = { method: metodo, headers: {} };
+  if (cuerpo !== undefined) {
+    opciones.headers["Content-Type"] = "application/json";
+    opciones.body = JSON.stringify(cuerpo);   // los datos viajan como JSON
+  }
+
+  let respuesta;
+  try {
+    respuesta = await fetch(API_URL + ruta, opciones);
+  } catch (e) {
+    throw new Error("No se puede conectar con la API en " + API_URL);
+  }
+
+  const datos = await respuesta.json().catch(() => null);
+
+  // si el codigo HTTP no es 2xx, mostramos el "detail" que devuelve FastAPI
+  if (!respuesta.ok) {
+    let detalle = datos && datos.detail;
+    if (Array.isArray(detalle)) {
+      // errores de validacion (422): lista de errores de Pydantic
+      detalle = detalle.map(d => d.msg.replace("Value error, ", "")).join(". ");
+    }
+    throw new Error(`Error ${respuesta.status}: ${detalle || respuesta.statusText}`);
+  }
+  return datos;
+}
+
+// --- Usuarios ---
+const api = {
+  // GET /usuarios  -> lista de usuarios
+  listarUsuarios:   ()          => pedirApi("GET",    "/usuarios?limit=1000"),
+  // POST /usuarios -> crea un usuario (201)
+  crearUsuario:     (usuario)   => pedirApi("POST",   "/usuarios", usuario),
+
+  // --- Productos ---
+  // GET /productos -> lista de productos
+  listarProductos:  ()          => pedirApi("GET",    "/productos?limit=1000"),
+  // POST /productos -> crea un producto (201)
+  crearProducto:    (producto)  => pedirApi("POST",   "/productos", producto),
+  // DELETE /productos/{producto_id} -> elimina un producto
+  eliminarProducto: (id)        => pedirApi("DELETE", "/productos/" + encodeURIComponent(id)),
+
+  // --- Pedidos ---
+  // POST /pedidos -> crea un pedido (201)
+  crearPedido:      (pedido)    => pedirApi("POST",   "/pedidos", pedido),
+  // GET /usuarios/{cliente_id}/pedidos -> historial de pedidos del usuario
+  pedidosDeUsuario: (id)        => pedirApi("GET",    "/usuarios/" + encodeURIComponent(id) + "/pedidos"),
+};
+
+
+// =====================================================================
+// INTERFAZ: pintar los datos recibidos y leer los formularios
+// =====================================================================
+
+let productos = [];
+let usuarios = [];
+
+const $ = (id) => document.getElementById(id);
+
+// escapa el texto antes de meterlo en el HTML
+function esc(texto) {
+  return String(texto ?? "").replace(/[&<>"']/g, c =>
+    ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+}
+
+const euros = (n) => Number(n).toFixed(2) + " EUR";
+
+function avisar(mensaje, tipo = "ok") {
+  const div = document.createElement("div");
+  div.className = "aviso " + tipo;
+  div.textContent = mensaje;
+  $("avisos").appendChild(div);
+  setTimeout(() => div.remove(), 4500);
+}
+
+// --- Productos ---
+
+async function cargarProductos() {
+  try {
+    productos = await api.listarProductos();
+    pintarProductos();
+    pintarSelectoresProductos();
+  } catch (e) {
+    avisar(e.message, "error");
+  }
+}
+
+function pintarProductos() {
+  if (productos.length === 0) {
+    $("tabla-productos").innerHTML = '<p class="vacio">No hay productos todavia.</p>';
+    return;
+  }
+  const filas = productos.map(p => {
+    let detalle = "";
+    if (p.tipo === "electronico") detalle = `Garantia: ${esc(p.meses_garantia)} meses`;
+    if (p.tipo === "ropa") detalle = `Talla ${esc(p.talla)} · ${esc(p.color)}`;
+    return `<tr>
+      <td>${esc(p.nombre)}</td>
+      <td><span class="chip">${esc(p.tipo)}</span></td>
+      <td>${detalle}</td>
+      <td class="num">${euros(p.precio)}</td>
+      <td class="num">${esc(p.stock)}</td>
+      <td><button class="btn peligro" data-borrar="${esc(p.id)}">Eliminar</button></td>
+    </tr>`;
+  }).join("");
+  $("tabla-productos").innerHTML = `<table>
+    <thead><tr><th>Nombre</th><th>Tipo</th><th>Detalle</th><th class="num">Precio</th><th class="num">Stock</th><th></th></tr></thead>
+    <tbody>${filas}</tbody></table>`;
+}
+
+function mostrarCamposSegunTipo() {
+  const tipo = $("p-tipo").value;
+  $("campos-electronico").classList.toggle("oculto", tipo !== "electronico");
+  $("campos-ropa").classList.toggle("oculto", tipo !== "ropa");
+}
+
+async function enviarProducto(evento) {
+  evento.preventDefault();
+  const tipo = $("p-tipo").value;
+  const producto = {
+    tipo,
+    nombre: $("p-nombre").value.trim(),
+    precio: Number($("p-precio").value),
+    stock: Number($("p-stock").value),
+  };
+  // los campos vacios no se envian: asi es la API la que avisa si falta alguno
+  if (tipo === "electronico" && $("p-garantia").value !== "") {
+    producto.meses_garantia = Number($("p-garantia").value);
+  }
+  if (tipo === "ropa") {
+    if ($("p-talla").value.trim()) producto.talla = $("p-talla").value.trim();
+    if ($("p-color").value.trim()) producto.color = $("p-color").value.trim();
+  }
+  try {
+    const creado = await api.crearProducto(producto);
+    avisar(`Producto "${creado.nombre}" creado`);
+    $("form-producto").reset();
+    mostrarCamposSegunTipo();
+    await cargarProductos();
+  } catch (e) {
+    avisar(e.message, "error");
+  }
+}
+
+async function borrarProducto(id) {
+  const producto = productos.find(p => p.id === id);
+  if (!confirm(`¿Eliminar "${producto ? producto.nombre : id}"?`)) return;
+  try {
+    await api.eliminarProducto(id);
+    avisar("Producto eliminado");
+    await cargarProductos();
+  } catch (e) {
+    avisar(e.message, "error");
+  }
+}
+
+// --- Usuarios ---
+
+async function cargarUsuarios() {
+  try {
+    usuarios = await api.listarUsuarios();
+    pintarUsuarios();
+    pintarSelectoresUsuarios();
+  } catch (e) {
+    avisar(e.message, "error");
+  }
+}
+
+function pintarUsuarios() {
+  if (usuarios.length === 0) {
+    $("tabla-usuarios").innerHTML = '<p class="vacio">No hay usuarios todavia.</p>';
+    return;
+  }
+  const filas = usuarios.map(u => `<tr>
+      <td>${esc(u.nombre)}</td>
+      <td>${esc(u.email)}</td>
+      <td><span class="chip">${u.es_admin ? "admin" : "cliente"}</span></td>
+      <td style="color:var(--suave);font-size:.8rem">${esc(u.id.slice(0, 8))}</td>
+    </tr>`).join("");
+  $("tabla-usuarios").innerHTML = `<table>
+    <thead><tr><th>Nombre</th><th>Email</th><th>Rol</th><th>Id</th></tr></thead>
+    <tbody>${filas}</tbody></table>`;
+}
+
+async function enviarUsuario(evento) {
+  evento.preventDefault();
+  const usuario = {
+    tipo: $("u-tipo").value,
+    nombre: $("u-nombre").value.trim(),
+    email: $("u-email").value.trim(),
+  };
+  if (usuario.tipo === "cliente") usuario.direccion_postal = $("u-direccion").value.trim();
+  try {
+    const creado = await api.crearUsuario(usuario);
+    avisar(`Usuario "${creado.nombre}" creado`);
+    $("form-usuario").reset();
+    $("campo-direccion").classList.remove("oculto");
+    await cargarUsuarios();
+  } catch (e) {
+    avisar(e.message, "error");
+  }
+}
+
+// --- Pedidos ---
+
+function opcionesProductos() {
+  return productos.map(p =>
+    `<option value="${esc(p.id)}">${esc(p.nombre)} (${euros(p.precio)}, stock ${esc(p.stock)})</option>`).join("");
+}
+
+function anadirLinea() {
+  const div = document.createElement("div");
+  div.className = "linea";
+  div.innerHTML = `<select class="l-producto">${opcionesProductos()}</select>
+    <input class="l-cantidad" type="number" min="1" step="1" value="1" aria-label="Cantidad">
+    <button type="button" title="Quitar">✕</button>`;
+  div.querySelector("button").onclick = () => div.remove();
+  $("lineas").appendChild(div);
+}
+
+function pintarSelectoresProductos() {
+  // actualiza los desplegables de las lineas del pedido manteniendo lo elegido
+  document.querySelectorAll(".l-producto").forEach(select => {
+    const elegido = select.value;
+    select.innerHTML = opcionesProductos();
+    if (productos.some(p => p.id === elegido)) select.value = elegido;
+  });
+}
+
+function pintarSelectoresUsuarios() {
+  const clientes = usuarios.filter(u => !u.es_admin);
+  const elegidoPedido = $("ped-cliente").value;
+  $("ped-cliente").innerHTML = clientes.length
+    ? clientes.map(u => `<option value="${esc(u.id)}">${esc(u.nombre)} (${esc(u.email)})</option>`).join("")
+    : '<option value="">No hay clientes</option>';
+  if (clientes.some(u => u.id === elegidoPedido)) $("ped-cliente").value = elegidoPedido;
+
+  const elegidoConsulta = $("consulta-usuario").value;
+  $("consulta-usuario").innerHTML = '<option value="">Elige un usuario…</option>' +
+    usuarios.map(u => `<option value="${esc(u.id)}">${esc(u.nombre)} (${esc(u.email)})</option>`).join("");
+  if (usuarios.some(u => u.id === elegidoConsulta)) $("consulta-usuario").value = elegidoConsulta;
+}
+
+async function enviarPedido(evento) {
+  evento.preventDefault();
+  const items = [...document.querySelectorAll("#lineas .linea")].map(linea => ({
+    producto_id: linea.querySelector(".l-producto").value,
+    cantidad: Number(linea.querySelector(".l-cantidad").value),
+  }));
+  const pedido = { cliente_id: $("ped-cliente").value, items };
+  try {
+    const creado = await api.crearPedido(pedido);
+    avisar(`Pedido creado. Total: ${euros(creado.total)}`);
+    $("lineas").innerHTML = "";
+    anadirLinea();
+    await cargarProductos();               // el stock ha cambiado
+    $("consulta-usuario").value = pedido.cliente_id;
+    await cargarPedidos();                 // mostramos el historial del cliente
+  } catch (e) {
+    avisar(e.message, "error");
+  }
+}
+
+async function cargarPedidos() {
+  const id = $("consulta-usuario").value;
+  if (!id) {
+    $("lista-pedidos").innerHTML = '<p class="vacio">Elige un usuario para ver sus pedidos.</p>';
+    return;
+  }
+  try {
+    const pedidos = await api.pedidosDeUsuario(id);
+    if (pedidos.length === 0) {
+      $("lista-pedidos").innerHTML = '<p class="vacio">Este usuario no tiene pedidos.</p>';
+      return;
+    }
+    $("lista-pedidos").innerHTML = pedidos.map(p => `
+      <div class="pedido">
+        <div class="pedido-cab">
+          <strong>Pedido ${esc(p.id.slice(0, 8))}</strong>
+          <span>${new Date(p.fecha).toLocaleString("es-ES")}</span>
+        </div>
+        <table>
+          <tbody>
+            ${p.items.map(i => `<tr>
+              <td>${esc(i.nombre)}</td>
+              <td class="num">x${esc(i.cantidad)}</td>
+              <td class="num">${euros(i.precio_unitario)}</td>
+              <td class="num">${euros(i.subtotal)}</td>
+            </tr>`).join("")}
+            <tr><td colspan="3"><strong>Total</strong></td><td class="num"><strong>${euros(p.total)}</strong></td></tr>
+          </tbody>
+        </table>
+      </div>`).join("");
+  } catch (e) {
+    avisar(e.message, "error");
+  }
+}
+
+// --- Conexion con el servidor ---
+
+async function conectar() {
+  API_URL = $("api-url").value.trim().replace(/\/+$/, "");
+  try { localStorage.setItem("tienda_api_url", API_URL); } catch (e) {}
+  $("estado").className = "estado";
+  $("estado").textContent = "Conectando…";
+  try {
+    await api.listarUsuarios();
+    $("estado").className = "estado ok";
+    $("estado").textContent = "Conectado";
+    await Promise.all([cargarProductos(), cargarUsuarios()]);
+    await cargarPedidos();
+  } catch (e) {
+    $("estado").className = "estado error";
+    $("estado").textContent = "Sin conexion";
+    avisar(e.message, "error");
+  }
+}
+
+// --- Eventos ---
+
+document.querySelectorAll("nav button").forEach(boton => {
+  boton.onclick = () => {
+    document.querySelectorAll("nav button").forEach(b => b.classList.toggle("activa", b === boton));
+    document.querySelectorAll(".seccion").forEach(s =>
+      s.classList.toggle("activa", s.id === boton.dataset.seccion));
+  };
+});
+$("p-tipo").onchange = mostrarCamposSegunTipo;
+$("u-tipo").onchange = () => $("campo-direccion").classList.toggle("oculto", $("u-tipo").value !== "cliente");
+$("form-producto").onsubmit = enviarProducto;
+$("form-usuario").onsubmit = enviarUsuario;
+$("form-pedido").onsubmit = enviarPedido;
+$("btn-anadir-linea").onclick = anadirLinea;
+$("btn-recargar-productos").onclick = cargarProductos;
+$("btn-recargar-usuarios").onclick = cargarUsuarios;
+$("consulta-usuario").onchange = cargarPedidos;
+$("btn-conectar").onclick = conectar;
+$("tabla-productos").onclick = (e) => {
+  const id = e.target.dataset && e.target.dataset.borrar;
+  if (id) borrarProducto(id);
+};
+
+// al abrir la pagina
+$("api-url").value = API_URL;
+anadirLinea();
+conectar();
+</script>
+</body>
+</html>
