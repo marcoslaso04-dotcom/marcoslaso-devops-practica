@@ -17,7 +17,7 @@ Este repositorio se usa en la Práctica 3 para trabajar con Git/GitHub (ramas `f
 ## Estructura
 
 ```text
-├── Tienda_online/   API REST con FastAPI (servidor)
+├── src/            API REST con FastAPI (servidor)
 │   ├── models/      Producto, Usuario y Pedido
 │   ├── Services/    TiendaService (lógica de negocio)
 │   ├── schemas.py   Esquemas Pydantic de entrada/salida
@@ -31,7 +31,7 @@ Ni el cliente ni el frontend importan nada del servidor: todo pasa por los endpo
 ## 1. Arrancar la API
 
 ```bash
-cd Tienda_online
+cd src
 pip install -r requirements.txt
 uvicorn main:app --reload
 ```
@@ -110,7 +110,7 @@ Todo el código que habla con la API está en la sección `PETICIONES A LA API` 
 
 El resto del script solo pinta en pantalla los JSON recibidos y lee los formularios.
 
-Para que el navegador permita estas peticiones, la API tiene activado **CORS** (`CORSMiddleware` en `Tienda_online/main.py`). Sin CORS, el navegador bloquea las peticiones de una página abierta desde otro origen, por ejemplo un fichero local.
+Para que el navegador permita estas peticiones, la API tiene activado **CORS** (`CORSMiddleware` en `src/main.py`). Sin CORS, el navegador bloquea las peticiones de una página abierta desde otro origen, por ejemplo un fichero local.
 
 ## Comprobación final
 
