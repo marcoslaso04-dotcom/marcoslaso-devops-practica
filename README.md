@@ -96,19 +96,21 @@ Con el contenedor en marcha:
 
 ### Descargar la imagen publicada (Docker Hub)
 
+Imagen: https://hub.docker.com/r/marcoslaso/tienda-online-api
+
 ```bash
-docker pull <usuario-dockerhub>/tienda-online-api:1.0
-docker run --rm -p 8000:8000 <usuario-dockerhub>/tienda-online-api:1.0
+docker pull marcoslaso/tienda-online-api:1.0
+docker run --rm -p 8000:8000 marcoslaso/tienda-online-api:1.0
 ```
 
 Para publicarla después de construirla:
 
 ```bash
 docker login
-docker tag tienda-online-api:1.0 <usuario-dockerhub>/tienda-online-api:1.0
-docker tag tienda-online-api:1.0 <usuario-dockerhub>/tienda-online-api:latest
-docker push <usuario-dockerhub>/tienda-online-api:1.0
-docker push <usuario-dockerhub>/tienda-online-api:latest
+docker tag tienda-online-api:1.0 marcoslaso/tienda-online-api:1.0
+docker tag tienda-online-api:1.0 marcoslaso/tienda-online-api:latest
+docker push marcoslaso/tienda-online-api:1.0
+docker push marcoslaso/tienda-online-api:latest
 ```
 
 ## Ejecución sin Docker
