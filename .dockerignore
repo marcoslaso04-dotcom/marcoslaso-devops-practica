@@ -1,0 +1,16 @@
+__pycache__/
+*.pyc
+.git
+.gitignore
+.venv
+venv/
+.pytest_cache/
+.DS_Store
+tests/
+
+# No hacen falta dentro de la imagen de la API
+cliente/
+frontend/
+README.md
+dockerfile
+.dockerignore
